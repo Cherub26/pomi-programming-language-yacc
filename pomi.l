@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "y.tab.h"  /* Include the YACC-generated header */
 
 int line_num = 1;
