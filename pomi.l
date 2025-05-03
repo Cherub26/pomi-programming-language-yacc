@@ -5,10 +5,11 @@
 #include "pomi.h"
 #include "y.tab.h"
 
-int line_num = 1;
-
 void yyerror(char *);
+extern int yylineno; // Use yylineno provided by flex
 %}
+
+%option yylineno
 
 %%
 
@@ -62,13 +63,18 @@ void yyerror(char *);
 
 [ \t]           ;  /* ignore whitespace */
 
-\n              { line_num++; }
+\n              ;  /* Let flex handle line counting with yylineno */ 
 
 "//".*          ;  /* ignore single-line comments */
 
 "/*"([^*]|"*"[^/])*"*/" ;  /* ignore multi-line comments */
 
-.               { yyerror("Unknown character"); }
+.               { 
+                  /* Critical change: Just call yyerror with no return */
+                  char message[100];
+                  snprintf(message, sizeof(message), "Unknown character: '%s'", yytext);
+                  yyerror(message);
+                }
 
 %%
 

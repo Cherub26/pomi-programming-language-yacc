@@ -15,7 +15,7 @@ void freeNode(nodeType *p);
 int ex(nodeType *p);
 int yylex(void);
 void yyerror(char *s);
-extern int line_num; // Use line number from lexer
+extern int yylineno; // Use line number tracking from Flex
 int sym[26]; // Symbol table for variables
 char* strSym[26]; // String symbol table
 
@@ -97,7 +97,10 @@ void print_param_tree(nodeType *node, int level);
 
 program:
         function                { exit(0); }
-        | error                 { yyerror("Syntax error in program"); }
+        | error                 { 
+            /* Serious error detected (should be handled by lexer now) */
+            YYABORT;
+        }
         ;
 
 function:
@@ -142,7 +145,10 @@ stmt:
                                         }
         | function_call SEMICOLON       { $$ = $1; }
         | return_stmt                   { $$ = $1; } /* Make return a standalone statement */
-        | error SEMICOLON               { yyerror("Syntax error in statement"); }
+        | error SEMICOLON               { 
+            // Instead of continuing, abort parsing
+            YYABORT;
+        }
         ;
 
 parameter_list:
@@ -260,18 +266,15 @@ void freeNode(nodeType *p) {
 }
 
 void yyerror(char *s) {
-    fprintf(stderr, "Line %d: %s\n", line_num, s);
+    fprintf(stderr, "Line %d: %s\n", yylineno, s);
     fflush(stderr);
-    exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE); // Keep the immediate exit
 }
 
 int main(void) {
     printf("POMI Language Parser\n");
-    int parse_result = yyparse();
-    if (parse_result != 0) {
-        fprintf(stderr, "Parsing failed with errors.\n");
-        return EXIT_FAILURE;
-    }
+    /* We don't need to check parse_result since yyerror will exit on failure */
+    yyparse();
     return EXIT_SUCCESS;
 }
 
