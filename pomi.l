@@ -25,17 +25,6 @@ extern int yylineno; // Use yylineno provided by flex
 "FUNCTION"      { return FUNCTION; }
 "RETURN"        { return RETURN; }
 "PRINT"         { return PRINT; }
-"FOR"           { return FOR; }
-"CREATE"        { return CREATE; }
-"AS"            { return AS; }
-"PLAYER"        { return PLAYER; }
-"ENEMY"         { return ENEMY; }
-"PLATFORM"      { return PLATFORM; }
-"ITEM"          { return ITEM; }
-"GAME"          { return GAME; }
-"LEVEL"         { return LEVEL; }
-"ON"            { return ON; }
-"COLLISION"     { return COLLISION; }
 "TRY"           { return TRY; }
 "CATCH"         { return CATCH; }
 "ENDTRY"        { return ENDTRY; }
@@ -45,7 +34,6 @@ extern int yylineno; // Use yylineno provided by flex
 "&&"            { return AND; }
 "||"            { return OR; }
 "!"             { return NOT; }
-
 "+"             { return PLUS; }
 "-"             { return MINUS; }
 "*"             { return MULTIPLY; }

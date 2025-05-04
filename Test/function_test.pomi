@@ -1,0 +1,50 @@
+// Simple function tests for POMI language
+
+// Basic function that adds two numbers
+FUNCTION add(a, b) {
+    RETURN a + b;
+}
+
+// Function that calculates average
+FUNCTION average(x, y) {
+    RETURN (x + y) / 2;
+}
+
+// Test the add function
+PRINT("Testing add function:");
+DEFINE result = add(5, 3);
+PRINT(result);  // Should print 8
+
+// Test with different values
+PRINT("Testing with different values:");
+DEFINE mixed = add(10, 4);
+PRINT(mixed);  // Should print 14
+
+// Test the average function
+PRINT("Testing average function:");
+DEFINE avg = average(7, 5);
+PRINT(avg);  // Should print 6
+
+// Nested function calls    
+PRINT("Testing nested function calls:");
+DEFINE nested = add(add(2, 3), 5);
+PRINT(nested);  // Should print 10
+
+// Using function result in expression
+PRINT("Using function result in expression:");
+DEFINE expr = add(4, 6) * 2;
+PRINT(expr);  // Should print 20
+
+// Function with conditional logic
+FUNCTION max(a, b) {
+    IF a > b THEN
+        RETURN a;
+    ELSE
+        RETURN b;
+    ENDIF;
+}
+
+PRINT("Testing max function:");
+DEFINE maximum = max(15, 7);
+PRINT(maximum);  // Should print 15
+PRINT(max(3, 9));  // Should print 9

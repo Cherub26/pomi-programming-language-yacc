@@ -1,0 +1,73 @@
+// ===================================================================
+// POMI BOOLEAN OPERATIONS TEST
+// This file demonstrates all boolean functionality in the POMI language
+// ===================================================================
+
+// === BASIC BOOLEAN VALUES ===
+PRINT("=== Testing basic boolean values ===");
+DEFINE t = true;
+DEFINE f = false;
+
+PRINT("true value:");
+PRINT(t);       // Should print 1
+PRINT("false value:");
+PRINT(f);      // Should print 0
+
+// === LOGICAL OPERATIONS ===
+PRINT("=== Testing logical operations ===");
+
+// Logical AND (&&)
+PRINT("true && true =");
+PRINT(true && true);     // Should print 1 (true)
+PRINT("true && false =");
+PRINT(t && f);          // Should print 0 (false)
+PRINT("false && false =");
+PRINT(f && f);         // Should print 0 (false)
+
+// Logical OR (||)
+PRINT("true || true =");
+PRINT(t || t);           // Should print 1 (true)
+PRINT("true || false =");
+PRINT(t || f);          // Should print 1 (true)
+PRINT("false || false =");
+PRINT(f || f);         // Should print 0 (false)
+
+// Logical NOT (!)
+PRINT("!true =");
+PRINT(!t);                      // Should print 0 (false)
+PRINT("!false =");
+PRINT(!f);                     // Should print 1 (true)
+
+// === BOOLEAN IN CONDITIONALS ===
+PRINT("=== Testing booleans in IF statements ===");
+
+PRINT("IF true branch:");
+IF t THEN
+    PRINT("  This code executes because condition is true");
+ENDIF;
+
+PRINT("IF false branch:");
+IF f THEN
+    PRINT("  This code should NOT execute");
+ELSE
+    PRINT("  This ELSE code executes because condition is false");
+ENDIF;
+
+// === COMPLEX BOOLEAN EXPRESSIONS ===
+PRINT("=== Testing complex boolean expressions ===");
+
+DEFINE x = 5;
+DEFINE y = 10;
+
+PRINT("x =");
+PRINT(x);
+PRINT("y =");
+PRINT(y);
+PRINT("x < y && x > 0 =");
+PRINT(x < y && x > 0);   // Should print 1 (true)
+PRINT("x > y || x > 0 =");
+PRINT(x > y || x > 0);   // Should print 1 (true)
+PRINT("!(x == y) =");
+PRINT(!(x == y));             // Should print 1 (true)
+PRINT("(x < y) || (x > y && y < 0) =");
+PRINT((x < y) || (x > y && y < 0));  // Should print 1 (true)

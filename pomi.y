@@ -111,10 +111,8 @@ void throw_exception(char* msg) {
 %token <strval> STRING
 %token <boolval> TRUE FALSE
 %token WHILE IF PRINT ELSE
-%token FOR RETURN FUNCTION
+%token RETURN FUNCTION
 %token DEFINE DO ENDWHILE ENDIF THEN
-%token CREATE AS PLAYER ENEMY PLATFORM ITEM GAME LEVEL
-%token ON COLLISION
 %token TRY CATCH ENDTRY
 %token THROW
 
@@ -143,8 +141,6 @@ void throw_exception(char* msg) {
 
 // Define non-terminal types
 %type <nPtr> stmt expr stmt_list function_call return_stmt parameter_list argument_list
-%type <nPtr> property_list property property_value array_literal member_access object_creation
-%type <nPtr> collision_handler
 
 %%
 
@@ -188,8 +184,6 @@ stmt:
                                         { $$ = opr(IF, 3, $2, $4, $6); }
         | DEFINE IDENTIFIER EQUALS expr SEMICOLON
                                         { $$ = opr(DEFINE, 2, id($2), $4); }
-        | object_creation              { $$ = $1; }
-        | collision_handler            { $$ = $1; }
         | LEFT_BRACE stmt_list RIGHT_BRACE            
                                         { $$ = $2; }
         | FUNCTION IDENTIFIER LEFT_PAREN parameter_list RIGHT_PAREN LEFT_BRACE stmt_list RIGHT_BRACE
@@ -207,51 +201,6 @@ stmt:
             // Instead of continuing, abort parsing
             YYABORT;
         }
-        ;
-
-object_creation:
-        CREATE IDENTIFIER AS PLAYER LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
-                                        { $$ = opr(CREATE, 3, id($2), opr(PLAYER, 0), $6); }
-        | CREATE IDENTIFIER AS ENEMY LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
-                                        { $$ = opr(CREATE, 3, id($2), opr(ENEMY, 0), $6); }
-        | CREATE IDENTIFIER AS PLATFORM LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
-                                        { $$ = opr(CREATE, 3, id($2), opr(PLATFORM, 0), $6); }
-        | CREATE IDENTIFIER AS ITEM LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
-                                        { $$ = opr(CREATE, 3, id($2), opr(ITEM, 0), $6); }
-        | CREATE IDENTIFIER AS GAME LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
-                                        { $$ = opr(CREATE, 3, id($2), opr(GAME, 0), $6); }
-        | CREATE IDENTIFIER AS LEVEL LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
-                                        { $$ = opr(CREATE, 3, id($2), opr(LEVEL, 0), $6); }
-        ;
-
-property_list:
-          property                      { $$ = $1; }
-        | property property_list        { $$ = opr(';', 2, $1, $2); }
-        ;
-
-property:
-          IDENTIFIER EQUALS property_value SEMICOLON
-                                        { $$ = opr(EQUALS, 2, id($1), $3); }
-        ;
-
-property_value:
-          expr                          { $$ = $1; }
-        | array_literal                 { $$ = $1; }
-        ;
-
-array_literal:
-          LEFT_BRACKET argument_list RIGHT_BRACKET
-                                        { $$ = opr('[', 1, $2); }
-        ;
-
-member_access:
-          IDENTIFIER DOT IDENTIFIER     { $$ = opr(DOT, 2, id($1), id($3)); }
-        | member_access DOT IDENTIFIER  { $$ = opr(DOT, 2, $1, id($3)); }
-        ;
-
-collision_handler:
-          ON COLLISION LEFT_PAREN IDENTIFIER COMMA IDENTIFIER RIGHT_PAREN LEFT_BRACE stmt_list RIGHT_BRACE
-                                        { $$ = opr(COLLISION, 3, id($4), id($6), $9); }
         ;
 
 parameter_list:
@@ -283,12 +232,11 @@ stmt_list:
 
 expr:
           INTEGER               { $$ = con($1); }
-          | FLOAT               { $$ = flt($1); }
+        | FLOAT                 { $$ = flt($1); }
         | STRING                { $$ = str($1); }
         | IDENTIFIER            { $$ = id($1); }
         | TRUE                  { $$ = boolean(true); }
         | FALSE                 { $$ = boolean(false); }
-        | member_access         { $$ = $1; }
         | MINUS expr %prec UMINUS       
                                 { $$ = opr(UMINUS, 1, $2); }
         | NOT expr              { $$ = opr(NOT, 1, $2); }
@@ -440,8 +388,6 @@ float exf(nodeType *p) {
                         return (float)sym[p->id.i];
     case typeOpr:
         switch(p->opr.oper) {
-        case CREATE:    return 0.0f;  // Object creation doesn't have a float value
-        case COLLISION: ex(p->opr.op[2]); return 0.0f;
         case DOT:       return 10.0f; // Placeholder for member access
         case '[':       return 0.0f;  // Placeholder for array literals
         case WHILE:     while(ex(p->opr.op[0])) ex(p->opr.op[1]); return 0.0f;
@@ -542,22 +488,6 @@ int ex(nodeType *p) {
                         return sym[p->id.i];
     case typeOpr:
         switch(p->opr.oper) {
-        case CREATE:    {
-                          // Handle object creation
-                          // For now, just output what we're creating
-                          int objId = p->opr.op[0]->id.i;
-                          printf("Created object %c\n", 'a' + objId);
-                          return 0;
-                        }
-        case COLLISION: {
-                          // Handle collision event
-                          int obj1 = p->opr.op[0]->id.i;
-                          int obj2 = p->opr.op[1]->id.i;
-                          printf("Registered collision between %c and %c\n", 'a' + obj1, 'a' + obj2);
-                          // Execute the collision handler body
-                          ex(p->opr.op[2]);
-                          return 0;
-                        }
         case DOT:       {
                           // Handle member access (e.g., player.health)
                           // This is just a placeholder implementation

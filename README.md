@@ -3,33 +3,22 @@ Group Members: Batuhan Yılmaz, Emre Kemal Aksel, Muhammed Kaan Uman
 
 ## POMI Language: A Platform Game Development Language
 ### Introduction
-POMI is a programming language designed specifically for creating 2D platformer games. The language offers an intuitive syntax for defining game elements like players, enemies, platforms, and items, along with specifying their behaviors and interactions.
+POMI is a domain-specific programming language designed for platform game development. It provides an intuitive syntax with built-in support for common game development patterns, making it accessible for programmers who want to quickly prototype or build 2D games.
 
 ### Language Design Goals
-
-1. Simplicity: Make game development accessible to beginners with minimal programming experience.
-2. Domain-Specific: Provide primitives and constructs specifically tailored for platformer game development.
-3. Event-Driven: Support event-based programming for game interactions.
+1.Simplicity: Easy to learn with straightforward syntax
+2.Type flexibility: Support for integers, floats, strings, and booleans
+3.Error handling: Built-in exception management
 
 ### Syntax Highlights
-#### Object Creation and Definition
-Objects in POMI are created using the CREATE keyword followed by an identifier and an object type:
 
-	CREATE mario AS PLAYER {
-	    position = [100, 200];
-	    size = [32, 32];
-	    speed = 5;
-	    jumpPower = 10;
-	}
+#### Data Types
+POMI supports various data types:
 
-#### Properties
-Object properties are defined using name-value pairs within curly braces:
-	
-	CREATE block AS PLATFORM {
-	    position = [300, 400];
-	    size = [64, 16];
-	    solid = true;
-	}
+	DEFINE score = 100;             // Integer
+	DEFINE speed = 5.5;             // Float
+	DEFINE message = "Game Over";   // String
+	DEFINE isJumping = true;        // Boolean
 
 #### Control Structures
 POMI supports standard control structures with game-specific keywords:
@@ -42,21 +31,26 @@ POMI supports standard control structures with game-specific keywords:
 	    enemy.position.x += enemy.direction * enemy.speed;
 	ENDWHILE;
 
-#### Event Handlers
-Event-based programming is supported through the ON keyword:
+POMI supports nested IF statements with ELSE clauses:
 
-	ON COLLISION(player, enemy) {
-	    player.health -= 1;
-	    IF player.health <= 0 THEN
-	        GAME.restart();
-	    ENDIF;
-	}
+	IF score >= 90 THEN
+		PRINT("Grade: A");
+	ELSE
+		IF score >= 80 THEN
+			PRINT("Grade: B");
+		ELSE 
+			PRINT("Grade: C");
+		ENDIF;
+	ENDIF;
 
-#### Variables and Constants
-Variables are defined using the DEFINE keyword with the "=" operator:
-	
-	DEFINE playerSpeed = 5;
-	DEFINE gravity = 9.8;
+#### Assignment Operations
+POMI supports multiple assignment operators:
+
+	x = 10;         // Standard assignment
+	x += 5;         // Add and assign (x = x + 5)
+	x -= 3;         // Subtract and assign (x = x - 3)
+	x *= 2;         // Multiply and assign (x = x * 2)
+	x /= 4;         // Divide and assign (x = x / 4)
 
 #### Functions
 Functions are defined with the FUNCTION keyword:
@@ -65,120 +59,161 @@ Functions are defined with the FUNCTION keyword:
 	    RETURN attackPower * 2 - defense;
 	}
 
-You can run your program by running the makefile and giving it to myprog as input:
+Functions can be called and their return values used in expressions:
+
+	DEFINE damage = calculateDamage(10, 5);
+	PRINT(damage);  // Outputs: 15
+
+#### Boolean Operations
+POMI supports logical operations for game state management:
+
+	DEFINE canJump = true;
+	DEFINE onGround = true;
+	DEFINE shouldJump = canJump && onGround;  // Logical AND
+	DEFINE isMoving = playerSpeed > 0 || enemyNearby;  // Logical OR
+	DEFINE isStationary = !isMoving;  // Logical NOT
+
+#### Exception Handling
+POMI provides try-catch error handling:
+
+	TRY
+		DEFINE result = dangerousOperation();
+		PRINT("Operation succeeded");
+	CATCH errorCode
+		PRINT("Operation failed");
+	ENDTRY;
+
+### Running POMI Programs
+You can run your program by using the provided makefile:
 
 	make
-	./pomi < example.pomi
+	./pomi < your_program.pomi
+
+### How to test POMI
+To use the provided test files with your POMI language parser, follow these steps:
+1. Compile the POMI Parser
+Use the make command to compile the parser:
+
+		make
+
+2. Run a Test File
+Execute the compiled parser with a test file as input:
+
+		./pomi < Test/<test_file>.pomi
+	
+	Replace <test_file> with the name of the test file you want to run, such as function_test, loop_test, or trycatch_test.
+3. Available Test Files
+	Here are the test files included in the `Test` directory:
+	`function_test.pomi`: Tests function definitions, calls, and nested calls.
+	`loop_test.pomi`: Demonstrates WHILE loops and nested loops.
+	`trycatch_test.pomi`: Tests exception handling with TRY, CATCH, and THROW.
+	`boolean_test.pomi`: Tests boolean operations and conditions.
+	`if_test.pomi`: Demonstrates IF, ELSE, and nested conditional statements.
+	`floatingpoint_test.pomi`: Tests floating-point operations and comparisons.
 
 ## POMI Language BNF Grammar
 
-	<program> ::= <statement-list>
+		/* Program structure */
+	<program> ::= <statement_list>
 
-	<statement-list> ::= <statement> 
-	                   | <statement> <statement-list>
+	<statement_list> ::= <statement> | <statement> <statement_list>
 
-	<statement> ::= <definition-statement>
-	              | <object-creation>
-	              | <assignment>
-	              | <if-statement>
-	              | <while-statement>
-	              | <function-definition>
-	              | <function-call>
-	              | <collision-handler>
-	              | <print-statement>
-	              | <input-statement>
-	              | <start-block>           // START block for initialization
+	/* Statements */
+	<statement> ::= <definition_statement>
+				| <assignment_statement>
+				| <conditional_statement>
+				| <loop_statement>
+				| <function_statement>
+				| <return_statement>
+				| <print_statement>
+				| <try_catch_statement>
+				| <throw_statement>
+				| <expression_statement>
 
-	<definition-statement> ::= "DEFINE" <identifier> "=" <expression> ";"
+	/* Definition statement */
+	<definition_statement> ::= DEFINE IDENTIFIER EQUALS <expression> SEMICOLON
 
-	<object-creation> ::= "CREATE" <identifier> "AS" <object-type> "{" <property-list> "}" ";"
+	/* Assignment statements */
+	<assignment_statement> ::= <lvalue> EQUALS <expression> SEMICOLON
+							| <lvalue> PLUS_EQUALS <expression> SEMICOLON
+							| <lvalue> MINUS_EQUALS <expression> SEMICOLON
+							| <lvalue> MULTIPLY_EQUALS <expression> SEMICOLON
+							| <lvalue> DIVIDE_EQUALS <expression> SEMICOLON
 
-	<object-type> ::= "PLAYER" | "ENEMY" | "PLATFORM" | "ITEM" | "GAME" | "LEVEL"
+	<lvalue> ::= IDENTIFIER
+			| <array_access>
+			| <object_access>
 
-	<property-list> ::= <property> 
-	                  | <property> <property-list>
+	<array_access> ::= <lvalue> LEFT_BRACKET <expression> RIGHT_BRACKET
 
-	<property> ::= <identifier> "=" <expression> ";"
-	             | <identifier> "=" <array-literal> ";"
+	<object_access> ::= <lvalue> DOT IDENTIFIER
 
-	<assignment> ::= <identifier> "=" <expression> ";"
-	               | <member-access> "=" <expression> ";"   // Allow assignment to members
-	               | <identifier> "++" ";"
-	               | <identifier> "--" ";"
-	               | <identifier> "+=" <expression> ";"     // Compound assignment
-	               | <identifier> "-=" <expression> ";"     // Compound assignment
-	               | <identifier> "*=" <expression> ";"     // Compound assignment
-	               | <identifier> "/=" <expression> ";"     // Compound assignment
+	/* Conditional statement */
+	<conditional_statement> ::= IF <expression> THEN <statement_list> ENDIF
+							| IF <expression> THEN <statement_list> ELSE <statement_list> ENDIF
 
-	<if-statement> ::= "IF" <condition> "THEN" <statement-list> "ENDIF" ";"
-	                 | "IF" <condition> "THEN" <statement-list> "ELSE" <statement-list> "ENDIF" ";"
+	/* Loop statement */
+	<loop_statement> ::= WHILE <expression> DO <statement_list> ENDWHILE
 
-	<while-statement> ::= "WHILE" <condition> "DO" <statement-list> "ENDWHILE" ";"
+	/* Function definition and call */
+	<function_statement> ::= FUNCTION IDENTIFIER LEFT_PAREN <parameter_list> RIGHT_PAREN LEFT_BRACE <statement_list> RIGHT_BRACE
 
-	<function-definition> ::= "FUNCTION" <identifier> "(" <parameter-list> ")" "{" <statement-list> <return-statement> "}" ";"
-	                        | "FUNCTION" <identifier> "(" <parameter-list> ")" "{" <statement-list> "}" ";"
+	<parameter_list> ::= ε
+					| IDENTIFIER
+					| IDENTIFIER COMMA <parameter_list>
 
-	<parameter-list> ::= ε 
-	                   | <identifier> 
-	                   | <identifier> "," <parameter-list>
+	<function_call> ::= IDENTIFIER LEFT_PAREN <argument_list> RIGHT_PAREN
 
-	<return-statement> ::= "RETURN" <expression> ";"
+	<argument_list> ::= ε
+					| <expression>
+					| <expression> COMMA <argument_list>
 
-	<function-call> ::= <identifier> "(" <argument-list> ")" ";"
+	<return_statement> ::= RETURN <expression> SEMICOLON
 
-	<argument-list> ::= ε 
-	                  | <expression> 
-	                  | <expression> "," <argument-list>
+	/* Print statement */
+	<print_statement> ::= PRINT <expression> SEMICOLON
 
-	<collision-handler> ::= "ON" "COLLISION" "(" <identifier> "," <identifier> ")" "{" <statement-list> "}" ";"
+	/* Exception handling */
+	<try_catch_statement> ::= TRY <statement_list> CATCH IDENTIFIER <statement_list> ENDTRY
 
-	<print-statement> ::= "PRINT" "(" <expression> ")" ";"
+	<throw_statement> ::= THROW <expression> SEMICOLON
 
-	<input-statement> ::= "INPUT" "(" <identifier> ")" ";"
+	/* Expression statement (expression followed by semicolon) */
+	<expression_statement> ::= <expression> SEMICOLON
 
-	<start-block> ::= "START" "{" <statement-list> "}"    // Initialization block
+	/* Expressions */
+	<expression> ::= <logical_expression>
 
-	<condition> ::= <expression>                          // Allow simple expression (truthiness)
-	              | <expression> <comparison-operator> <expression>
-	              | <condition> "&&" <condition>
-	              | <condition> "||" <condition>
-	              | "!" <condition>
-	              | "(" <condition> ")"
+	<logical_expression> ::= <comparison_expression>
+						| <logical_expression> AND <comparison_expression>
+						| <logical_expression> OR <comparison_expression>
+						| NOT <logical_expression>
 
-	<comparison-operator> ::= "==" | "!=" | "<" | ">" | "<=" | ">="
+	<comparison_expression> ::= <additive_expression>
+							| <comparison_expression> LESS_THAN <additive_expression>
+							| <comparison_expression> GREATER_THAN <additive_expression>
+							| <comparison_expression> LESS_THAN_EQUALS <additive_expression>
+							| <comparison_expression> GREATER_THAN_EQUALS <additive_expression>
+							| <comparison_expression> EQUALS_EQUALS <additive_expression>
+							| <comparison_expression> NOT_EQUALS <additive_expression>
 
-	<expression> ::= <term>
-	               | <expression> "+" <term>
-	               | <expression> "-" <term>
+	<additive_expression> ::= <multiplicative_expression>
+							| <additive_expression> PLUS <multiplicative_expression>
+							| <additive_expression> MINUS <multiplicative_expression>
 
-	<term> ::= <factor>
-	         | <term> "*" <factor>
-	         | <term> "/" <factor>
+	<multiplicative_expression> ::= <primary_expression>
+								| <multiplicative_expression> MULTIPLY <primary_expression>
+								| <multiplicative_expression> DIVIDE <primary_expression>
 
-	<factor> ::= <identifier>
-	           | <member-access>        // Object property access
-	           | <literal>
-	           | <array-literal>        // Array literal
-	           | <function-call>        // Function call within an expression
-	           | "(" <expression> ")"
-               | "-" <factor>           // Unary minus
+	<primary_expression> ::= IDENTIFIER
+						| INTEGER
+						| FLOAT
+						| STRING
+						| TRUE
+						| FALSE
+						| LEFT_PAREN <expression> RIGHT_PAREN
+						| <function_call>
+						
 
-	<member-access> ::= <identifier> "." <identifier>             // Basic member access (e.g., player.health)
-	                  | <member-access> "." <identifier>          // Chained member access (e.g., player.position.x)
 
-	<array-literal> ::= "[" <argument-list> "]"                   // Array definition like [1, 2, 3]
 
-	<identifier> ::= [a-zA-Z_][a-zA-Z0-9_]*                       // Standard identifier pattern
-
-	<literal> ::= <integer>
-	            | <float>
-	            | <string>
-	            | <boolean>
-
-	<integer> ::= [0-9]+
-
-	<float> ::= [0-9]+"."[0-9]+                                   // Floating point numbers
-
-	<string> ::= \"[^\"]*\"                                       // String literals
-
-	<boolean> ::= "true" | "false"                                // Boolean literals

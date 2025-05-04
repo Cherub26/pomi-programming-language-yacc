@@ -1,0 +1,40 @@
+// ===================================================================
+// POMI FLOATING POINT TEST
+// Simple examples demonstrating float functionality in POMI
+// ===================================================================
+
+DEFINE x = 3.5;
+PRINT(x);  // Should print 3.50
+
+// Basic operations with floats
+DEFINE y = 2.25;
+PRINT(y);  // Should print 2.25
+
+// Addition
+PRINT(x + y);  // Should print 5.75
+
+// Subtraction
+PRINT(x - y);  // Should print 1.25
+
+// Multiplication
+PRINT(x * y);  // Should print 7.88
+
+// Division
+PRINT(x / y);  // Should print 1.56
+
+// Mixed integer and float
+DEFINE i = 10;
+PRINT(i + x);  // Should print 13.50
+PRINT(i - y);  // Should print 7.75
+PRINT(i * y);  // Should print 22.50
+PRINT(i / x);  // Should print 2.86
+
+// Assignment operations
+DEFINE z = 4.0;
+z += 1.5;
+PRINT(z);  // Should print 5.50 
+
+// Comparison
+IF x > y THEN
+    PRINT("x is greater than y");
+ENDIF;

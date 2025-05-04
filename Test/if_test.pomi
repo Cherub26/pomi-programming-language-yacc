@@ -1,0 +1,151 @@
+// ===================================================================
+// POMI IF STATEMENT TEST
+// This file demonstrates all IF statement functionality in POMI
+// ===================================================================
+
+// === BASIC IF STATEMENTS ===
+PRINT("=== Testing basic IF statements ===");
+
+DEFINE x = 10;
+PRINT("x value: ");
+PRINT(x);
+
+PRINT("Basic IF with true condition:");
+IF x > 5 THEN
+    PRINT("  x is greater than 5");
+ENDIF;
+
+PRINT("Basic IF with false condition:");
+IF x < 5 THEN
+    PRINT("  This should NOT be printed");
+ENDIF;
+
+// === IF-ELSE STATEMENTS ===
+PRINT("");
+PRINT("=== Testing IF-ELSE statements ===");
+
+PRINT("IF-ELSE with true condition:");
+IF x == 10 THEN
+    PRINT("  x equals 10");
+ELSE
+    PRINT("  x does not equal 10");
+ENDIF;
+
+PRINT("IF-ELSE with false condition:");
+IF x != 10 THEN
+    PRINT("  This should NOT be printed");
+ELSE
+    PRINT("  x equals 10");
+ENDIF;
+
+// === NESTED IF STATEMENTS ===
+PRINT("");
+PRINT("=== Testing nested IF statements ===");
+
+DEFINE y = 20;
+PRINT("y value: ");
+PRINT(y);
+
+PRINT("Nested IFs:");
+IF x > 5 THEN
+    PRINT("  x is greater than 5");
+    IF y > 15 THEN
+        PRINT("  y is also greater than 15");
+    ENDIF;
+ENDIF;
+
+// === ELSE-IF CHAINS ===
+PRINT("");
+PRINT("=== Testing ELSE-IF chains ===");
+
+DEFINE score = 75;
+PRINT("Score value: ");
+PRINT(score);
+
+PRINT("Grade calculation:");
+IF score >= 90 THEN
+    PRINT("  Grade: A");
+ELSE
+    IF score >= 80 THEN
+        PRINT("  Grade: B");
+    ELSE
+        IF score >= 70 THEN
+            PRINT("  Grade: C");
+        ELSE
+            PRINT("  Grade: D");
+        ENDIF;
+    ENDIF;
+ENDIF;
+
+// === COMPLEX CONDITIONS ===
+PRINT("");
+PRINT("=== Testing complex conditions in IF statements ===");
+
+PRINT("Compound condition (AND):");
+IF x > 5 && y > 15 THEN
+    PRINT("  Both conditions are true");
+ENDIF;
+
+PRINT("Compound condition (OR):");
+IF x > 100 || y > 15 THEN
+    PRINT("  At least one condition is true");
+ENDIF;
+
+PRINT("Negated condition:");
+IF !(x < 5) THEN
+    PRINT("  x is NOT less than 5");
+ENDIF;
+
+PRINT("Complex nested condition:");
+IF (x > 5 && y > 15) || (x == 10 && y == 20) THEN
+    PRINT("  Complex condition evaluated to true");
+ENDIF;
+
+// === IF WITH FUNCTION CALLS ===
+PRINT("");
+PRINT("=== Testing IF with function calls ===");
+
+FUNCTION isEven(num) {
+    IF (num / 2) * 2 == num THEN
+        RETURN true;
+    ELSE
+        RETURN false;
+    ENDIF;
+}
+
+PRINT("Testing isEven function:");
+IF isEven(x) THEN
+    PRINT("  x is even");
+ELSE
+    PRINT("  x is odd");
+ENDIF;
+
+// === FUNCTION RETURNING FROM IF BLOCKS ===
+PRINT("");
+PRINT("=== Testing function with early returns in IF blocks ===");
+
+FUNCTION getLetterGrade(score) {
+    IF score >= 90 THEN
+        RETURN 1; // A
+    ELSE
+        IF score >= 80 THEN
+            RETURN 2; //B
+        ELSE
+            IF score >= 70 THEN
+                RETURN 3; //C
+            ELSE
+                RETURN 4; //D
+            ENDIF;
+        ENDIF;
+    ENDIF;
+}
+
+PRINT("Letter grade for 75:");
+DEFINE letterGrade = getLetterGrade(75);
+PRINT(letterGrade);
+
+PRINT("Letter grade for 95:");
+letterGrade = getLetterGrade(95);
+PRINT(letterGrade);
+
+PRINT("IF test completed successfully");

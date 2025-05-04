@@ -1,0 +1,60 @@
+// ===================================================================
+// POMI TRY-CATCH TEST FILE
+// Simple examples demonstrating exception handling in POMI
+// ===================================================================
+
+// Example 1: Basic try-catch with division by zero
+PRINT("Example 1: Basic try-catch with division by zero");
+TRY
+    DEFINE a = 10;
+    DEFINE b = 0;
+    PRINT("Attempting division by zero...");
+    PRINT(a / b);  // This will throw an exception
+    PRINT("This line won't execute");
+CATCH
+    PRINT("Caught division by zero exception");
+ENDTRY;
+
+PRINT("Execution continues after the try-catch block");
+
+// Example 2: Explicit exception throwing
+PRINT("");
+PRINT("Example 2: Explicit exception throwing");
+TRY
+    PRINT("About to throw an explicit exception");
+    THROW 42;  // Throws an exception with value 42
+    PRINT("This line won't execute");
+CATCH
+    PRINT("Caught explicit exception");
+ENDTRY;
+
+
+PRINT("");
+PRINT("Example 3: Division with exception handling");
+TRY
+    PRINT("Attempting safe division: 10 / 2");
+    DEFINE result = 10/2;
+    PRINT(result);  // Should print 5
+    
+    PRINT("Attempting unsafe division: 10 / 0");
+    result = 10/0;  // This will throw
+    PRINT("This line won't execute");
+CATCH
+    PRINT("Caught exception from divide() function");
+ENDTRY;
+
+// Example 4: Variables still accessible after exception
+PRINT("");
+PRINT("Example 4: Variables still accessible after exception");
+DEFINE x = 5;
+TRY
+    PRINT("x before exception = ");
+    PRINT(x);
+    x = 10;
+    PRINT("x changed to 10");
+    THROW 1;  // Throw an exception
+    x = 15;  // This won't execute
+CATCH
+    PRINT("x after exception = ");
+    PRINT(x);  // Should print 10
+ENDTRY;
