@@ -25,6 +25,21 @@ extern int yylineno; // Use yylineno provided by flex
 "RETURN"        { return RETURN; }
 "PRINT"         { return PRINT; }
 "FOR"           { return FOR; }
+"CREATE"        { return CREATE; }
+"AS"            { return AS; }
+"PLAYER"        { return PLAYER; }
+"ENEMY"         { return ENEMY; }
+"PLATFORM"      { return PLATFORM; }
+"ITEM"          { return ITEM; }
+"GAME"          { return GAME; }
+"LEVEL"         { return LEVEL; }
+"ON"            { return ON; }
+"COLLISION"     { return COLLISION; }
+"true"          { return TRUE; }
+"false"         { return FALSE; }
+"&&"            { return AND; }
+"||"            { return OR; }
+"!"             { return NOT; }
 
 "+"             { return PLUS; }
 "-"             { return MINUS; }
@@ -46,7 +61,10 @@ extern int yylineno; // Use yylineno provided by flex
 ")"             { return RIGHT_PAREN; }
 "{"             { return LEFT_BRACE; }
 "}"             { return RIGHT_BRACE; }
+"["             { return LEFT_BRACKET; }
+"]"             { return RIGHT_BRACKET; }
 ","             { return COMMA; }
+"."             { return DOT; }
 
 \"[^\"]*\"      { 
                   yylval.strval = strdup(yytext+1); // Skip opening quote
@@ -59,7 +77,15 @@ extern int yylineno; // Use yylineno provided by flex
                          return IDENTIFIER;
                        }
 
-[0-9]+          { yylval.integer = atoi(yytext); return INTEGER; }
+[0-9]+\.[0-9]+  { 
+                  yylval.floatval = atof(yytext); 
+                  return FLOAT; 
+                }
+
+[0-9]+          { 
+                  yylval.integer = atoi(yytext); 
+                  return INTEGER; 
+                }
 
 [ \t]           ;  /* ignore whitespace */
 

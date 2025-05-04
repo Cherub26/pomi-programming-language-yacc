@@ -73,113 +73,112 @@ You can run your program by running the makefile and giving it to myprog as inpu
 ## POMI Language BNF Grammar
 
 	<program> ::= <statement-list>
-	
+
 	<statement-list> ::= <statement> 
 	                   | <statement> <statement-list>
-	
+
 	<statement> ::= <definition-statement>
 	              | <object-creation>
 	              | <assignment>
 	              | <if-statement>
 	              | <while-statement>
 	              | <function-definition>
-	              | <function-call-statement>  // Function call used as a statement
+	              | <function-call>
 	              | <collision-handler>
 	              | <print-statement>
 	              | <input-statement>
-	              | <start-block>           // Added START block
-	
-	<definition-statement> ::= "DEFINE" <identifier> "=" <expression> ";"<definition-statement> ::= "DEFINE" <identifier> "=" <expression> ";"
-	
-	<object-creation> ::= "CREATE" <identifier> "AS" <object-type> "{" <property-list> "}" ";"<object-creation> ::= "CREATE" <identifier> "AS" <object-type> "{" <property-list> "}" ";"
-	
-	<object-type> ::= "PLAYER" | "ENEMY" | "PLATFORM" | "ITEM" | "GAME" | "LEVEL"<object-type> ::= "PLAYER" | "ENEMY" | "PLATFORM" | "ITEM" | "GAME" | "LEVEL"
-	
-	<property-list> ::= <property> <property-list> ::= <property> | <property> <property-list>
+	              | <start-block>           // START block for initialization
+
+	<definition-statement> ::= "DEFINE" <identifier> "=" <expression> ";"
+
+	<object-creation> ::= "CREATE" <identifier> "AS" <object-type> "{" <property-list> "}" ";"
+
+	<object-type> ::= "PLAYER" | "ENEMY" | "PLATFORM" | "ITEM" | "GAME" | "LEVEL"
+
+	<property-list> ::= <property> 
 	                  | <property> <property-list>
+
 	<property> ::= <identifier> "=" <expression> ";"
-	<property> ::= <identifier> "=" <expression> ";"
-	ression> ";"
-	<assignment> ::= <member-access> "=" <expression> ";" // Allow assignment to members
-	               | <identifier> "=" <expression> ";"               | <identifier> "--" ";"
+	             | <identifier> "=" <array-literal> ";"
+
+	<assignment> ::= <identifier> "=" <expression> ";"
+	               | <member-access> "=" <expression> ";"   // Allow assignment to members
 	               | <identifier> "++" ";"
 	               | <identifier> "--" ";"
-	               | <identifier> "+=" <expression> ";" // Added compound assignment                 | "IF" <condition> "THEN" <statement-list> "ELSE" <statement-list> "ENDIF" ";"
-	               | <identifier> "-=" <expression> ";" // Added compound assignment
-	               | <identifier> "*=" <expression> ";" // Added compound assignment<while-statement> ::= "WHILE" <condition> "DO" <statement-list> "ENDWHILE" ";"
-	               | <identifier> "/=" <expression> ";" // Added compound assignment
-	-statement> "}" ";"
-	<if-statement> ::= "IF" <condition> "THEN" <statement-list> "ENDIF" ";"                        | "FUNCTION" <identifier> "(" <parameter-list> ")" "{" <statement-list> "}" ";"
+	               | <identifier> "+=" <expression> ";"     // Compound assignment
+	               | <identifier> "-=" <expression> ";"     // Compound assignment
+	               | <identifier> "*=" <expression> ";"     // Compound assignment
+	               | <identifier> "/=" <expression> ";"     // Compound assignment
+
+	<if-statement> ::= "IF" <condition> "THEN" <statement-list> "ENDIF" ";"
 	                 | "IF" <condition> "THEN" <statement-list> "ELSE" <statement-list> "ENDIF" ";"
-	<parameter-list> ::= ε | <identifier> | <identifier> "," <parameter-list>
+
 	<while-statement> ::= "WHILE" <condition> "DO" <statement-list> "ENDWHILE" ";"
-	<return-statement> ::= "RETURN" <expression> ";"
+
 	<function-definition> ::= "FUNCTION" <identifier> "(" <parameter-list> ")" "{" <statement-list> <return-statement> "}" ";"
-	                        | "FUNCTION" <identifier> "(" <parameter-list> ")" "{" <statement-list> "}" ";"<function-call> ::= <identifier> "(" <argument-list> ")" ";"
-	
-	<parameter-list> ::= ε <argument-list> ::= ε | <expression> | <expression> "," <argument-list>
+	                        | "FUNCTION" <identifier> "(" <parameter-list> ")" "{" <statement-list> "}" ";"
+
+	<parameter-list> ::= ε 
 	                   | <identifier> 
-	                   | <identifier> "," <parameter-list><collision-handler> ::= "ON" "COLLISION" "(" <identifier> "," <identifier> ")" "{" <statement-list> "}" ";"
-	
-	<return-statement> ::= "RETURN" <expression> ";"<print-statement> ::= "PRINT" "(" <expression> ")" ";"
-	
-	<function-call-statement> ::= <function-call> ";" // Function call as a standalone statement<input-statement> ::= "INPUT" "(" <identifier> ")" ";"
-	
-	<function-call> ::= <identifier> "(" <argument-list> ")" // Function call used within expressions or as a statement baserator> <expression>
-	
-	<argument-list> ::= ε " <condition>
+	                   | <identifier> "," <parameter-list>
+
+	<return-statement> ::= "RETURN" <expression> ";"
+
+	<function-call> ::= <identifier> "(" <argument-list> ")" ";"
+
+	<argument-list> ::= ε 
 	                  | <expression> 
-	                  | <expression> "," <argument-list>              | "(" <condition> ")"
-	
-	<collision-handler> ::= "ON" "COLLISION" "(" <identifier> "," <identifier> ")" "{" <statement-list> "}" ";"<comparison-operator> ::= "==" | "!=" | "<" | ">" | "<=" | ">="
-	
+	                  | <expression> "," <argument-list>
+
+	<collision-handler> ::= "ON" "COLLISION" "(" <identifier> "," <identifier> ")" "{" <statement-list> "}" ";"
+
 	<print-statement> ::= "PRINT" "(" <expression> ")" ";"
-	
-	<input-statement> ::= "INPUT" "(" <identifier> ")" ";"               | <expression> "-" <term>
-	
-	<condition> ::= <expression> // Allow simple expression (truthiness)
+
+	<input-statement> ::= "INPUT" "(" <identifier> ")" ";"
+
+	<start-block> ::= "START" "{" <statement-list> "}"    // Initialization block
+
+	<condition> ::= <expression>                          // Allow simple expression (truthiness)
 	              | <expression> <comparison-operator> <expression>
-	              | <condition> "&&" <condition>         | <term> "/" <factor>
+	              | <condition> "&&" <condition>
 	              | <condition> "||" <condition>
-	              | "!" <condition>er>
+	              | "!" <condition>
 	              | "(" <condition> ")"
-	
-	<comparison-operator> ::= "==" | "!=" | "<" | ">" | "<=" | ">="           | "(" <expression> ")"
-	
-	<expression> ::= <term><identifier> ::= [a-zA-Z_][a-zA-Z0-9_]*
+
+	<comparison-operator> ::= "==" | "!=" | "<" | ">" | "<=" | ">="
+
+	<expression> ::= <term>
 	               | <expression> "+" <term>
-	               | <expression> "-" <term>r>
-	
+	               | <expression> "-" <term>
+
 	<term> ::= <factor>
-	         | <term> "*" <factor>            | <boolean>
+	         | <term> "*" <factor>
 	         | <term> "/" <factor>
-	<integer> ::= [0-9]+
-	<factor> ::= <member-access>       // Added member access
-	           | <identifier><float> ::= [0-9]+"."[0-9]+
+
+	<factor> ::= <identifier>
+	           | <member-access>        // Object property access
 	           | <literal>
-	           | <array-literal>       // Added array literal<string> ::= \"[^\"]*\"
-	           | <function-call>       // Function call within an expression (no semicolon here)
+	           | <array-literal>        // Array literal
+	           | <function-call>        // Function call within an expression
+	           | "(" <expression> ")"
+               | "-" <factor>           // Unary minus
 
+	<member-access> ::= <identifier> "." <identifier>             // Basic member access (e.g., player.health)
+	                  | <member-access> "." <identifier>          // Chained member access (e.g., player.position.x)
 
+	<array-literal> ::= "[" <argument-list> "]"                   // Array definition like [1, 2, 3]
 
+	<identifier> ::= [a-zA-Z_][a-zA-Z0-9_]*                       // Standard identifier pattern
 
+	<literal> ::= <integer>
+	            | <float>
+	            | <string>
+	            | <boolean>
 
+	<integer> ::= [0-9]+
 
+	<float> ::= [0-9]+"."[0-9]+                                   // Floating point numbers
 
+	<string> ::= \"[^\"]*\"                                       // String literals
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	<start-block> ::= "START" "{" <statement-list> "}" // Added START block rule		<boolean> ::= "true" | "false"		<string> ::= \"[^\"]*\"		<float> ::= [0-9]+"."[0-9]+		<integer> ::= [0-9]+		            | <boolean> // Added boolean	            | <string>	            | <float>	<literal> ::= <integer>		<identifier> ::= [a-zA-Z_][a-zA-Z0-9_]* // Standard identifier pattern		<array-literal> ::= "[" <argument-list> "]" // Array definition like [1, 2, 3]		                  | <member-access> "." <identifier> // Chained member access (e.g., player.position.x)	<member-access> ::= <identifier> "." <identifier> // Basic member access (e.g., player.health)		           | "(" <expression> ")"	<boolean> ::= "true" | "false"
+	<boolean> ::= "true" | "false"                                // Boolean literals

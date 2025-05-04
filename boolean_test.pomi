@@ -1,0 +1,21 @@
+// Test boolean functionality in POMI
+DEFINE t = true;
+DEFINE f = false;
+
+// Test boolean values
+PRINT(t);
+PRINT(f);
+
+// Test logical operations
+PRINT(t && f);  // Should print 0 (false)
+PRINT(t || f);  // Should print 1 (true)
+PRINT(!f);      // Should print 1 (true)
+
+// Test in conditions
+IF t THEN
+    PRINT(1);  // Should execute this
+ENDIF;
+
+IF f THEN
+    PRINT(0);  // Should not execute this
+ENDIF;

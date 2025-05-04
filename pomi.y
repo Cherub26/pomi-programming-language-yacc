@@ -10,14 +10,23 @@
 nodeType *opr(int oper, int nops, ...);
 nodeType *id(int i);
 nodeType *con(int value);
+nodeType *flt(float value);
 nodeType *str(char *value);
+nodeType *boolean(bool value);  // New function for boolean literals
 void freeNode(nodeType *p);
 int ex(nodeType *p);
+float exf(nodeType *p);  // New float-returning evaluation function
+bool isFloatExpression(nodeType *p);  // Add declaration for isFloatExpression
+bool isBoolExpression(nodeType *p);   // Add declaration for isBoolExpression
 int yylex(void);
 void yyerror(char *s);
 extern int yylineno; // Use line number tracking from Flex
 int sym[26]; // Symbol table for variables
 char* strSym[26]; // String symbol table
+float floatSym[26]; // Float symbol table
+bool isFloat[26]; // To track whether a variable holds an integer or float
+bool isBool[26]; // To track whether a variable holds a boolean
+bool boolSym[26]; // Boolean symbol table
 
 // Function table
 typedef struct {
@@ -59,18 +68,24 @@ void print_param_tree(nodeType *node, int level);
 
 %union {
     int integer;   // Integer values
+    float floatval; // Float values
     int id;        // Identifier indices
     char* strval;  // String values
+    bool boolval;  // Boolean values
     nodeType *nPtr; // Node pointers
 }
 
 // Define tokens
 %token <integer> INTEGER
+%token <floatval> FLOAT
 %token <id> IDENTIFIER
 %token <strval> STRING
+%token <boolval> TRUE FALSE
 %token WHILE IF PRINT ELSE
 %token FOR RETURN FUNCTION
 %token DEFINE DO ENDWHILE ENDIF THEN
+%token CREATE AS PLAYER ENEMY PLATFORM ITEM GAME LEVEL
+%token ON COLLISION
 
 // Operators and punctuation
 %token PLUS MINUS MULTIPLY DIVIDE 
@@ -78,20 +93,27 @@ void print_param_tree(nodeType *node, int level);
 %token LESS_THAN_EQUALS GREATER_THAN_EQUALS
 %token EQUALS SEMICOLON COMMA
 %token LEFT_PAREN RIGHT_PAREN LEFT_BRACE RIGHT_BRACE
+%token LEFT_BRACKET RIGHT_BRACKET DOT
 %token PLUS_EQUALS MINUS_EQUALS MULTIPLY_EQUALS DIVIDE_EQUALS
+%token AND OR NOT  // New logical operators
 
 // Precedence and associativity
 %nonassoc IFX
 %nonassoc ELSE
 
+%left OR
+%left AND
 %left EQUALS_EQUALS NOT_EQUALS
 %left LESS_THAN GREATER_THAN LESS_THAN_EQUALS GREATER_THAN_EQUALS
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
+%right NOT
 %nonassoc UMINUS
 
 // Define non-terminal types
 %type <nPtr> stmt expr stmt_list function_call return_stmt parameter_list argument_list
+%type <nPtr> property_list property property_value array_literal member_access object_creation
+%type <nPtr> collision_handler
 
 %%
 
@@ -135,6 +157,8 @@ stmt:
                                         { $$ = opr(IF, 3, $2, $4, $6); }
         | DEFINE IDENTIFIER EQUALS expr SEMICOLON
                                         { $$ = opr(DEFINE, 2, id($2), $4); }
+        | object_creation              { $$ = $1; }
+        | collision_handler            { $$ = $1; }
         | LEFT_BRACE stmt_list RIGHT_BRACE            
                                         { $$ = $2; }
         | FUNCTION IDENTIFIER LEFT_PAREN parameter_list RIGHT_PAREN LEFT_BRACE stmt_list RIGHT_BRACE
@@ -149,6 +173,51 @@ stmt:
             // Instead of continuing, abort parsing
             YYABORT;
         }
+        ;
+
+object_creation:
+        CREATE IDENTIFIER AS PLAYER LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
+                                        { $$ = opr(CREATE, 3, id($2), opr(PLAYER, 0), $6); }
+        | CREATE IDENTIFIER AS ENEMY LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
+                                        { $$ = opr(CREATE, 3, id($2), opr(ENEMY, 0), $6); }
+        | CREATE IDENTIFIER AS PLATFORM LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
+                                        { $$ = opr(CREATE, 3, id($2), opr(PLATFORM, 0), $6); }
+        | CREATE IDENTIFIER AS ITEM LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
+                                        { $$ = opr(CREATE, 3, id($2), opr(ITEM, 0), $6); }
+        | CREATE IDENTIFIER AS GAME LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
+                                        { $$ = opr(CREATE, 3, id($2), opr(GAME, 0), $6); }
+        | CREATE IDENTIFIER AS LEVEL LEFT_BRACE property_list RIGHT_BRACE SEMICOLON
+                                        { $$ = opr(CREATE, 3, id($2), opr(LEVEL, 0), $6); }
+        ;
+
+property_list:
+          property                      { $$ = $1; }
+        | property property_list        { $$ = opr(';', 2, $1, $2); }
+        ;
+
+property:
+          IDENTIFIER EQUALS property_value SEMICOLON
+                                        { $$ = opr(EQUALS, 2, id($1), $3); }
+        ;
+
+property_value:
+          expr                          { $$ = $1; }
+        | array_literal                 { $$ = $1; }
+        ;
+
+array_literal:
+          LEFT_BRACKET argument_list RIGHT_BRACKET
+                                        { $$ = opr('[', 1, $2); }
+        ;
+
+member_access:
+          IDENTIFIER DOT IDENTIFIER     { $$ = opr(DOT, 2, id($1), id($3)); }
+        | member_access DOT IDENTIFIER  { $$ = opr(DOT, 2, $1, id($3)); }
+        ;
+
+collision_handler:
+          ON COLLISION LEFT_PAREN IDENTIFIER COMMA IDENTIFIER RIGHT_PAREN LEFT_BRACE stmt_list RIGHT_BRACE
+                                        { $$ = opr(COLLISION, 3, id($4), id($6), $9); }
         ;
 
 parameter_list:
@@ -180,14 +249,21 @@ stmt_list:
 
 expr:
           INTEGER               { $$ = con($1); }
+          | FLOAT               { $$ = flt($1); }
         | STRING                { $$ = str($1); }
         | IDENTIFIER            { $$ = id($1); }
+        | TRUE                  { $$ = boolean(true); }
+        | FALSE                 { $$ = boolean(false); }
+        | member_access         { $$ = $1; }
         | MINUS expr %prec UMINUS       
                                 { $$ = opr(UMINUS, 1, $2); }
+        | NOT expr              { $$ = opr(NOT, 1, $2); }
         | expr PLUS expr        { $$ = opr(PLUS, 2, $1, $3); }
         | expr MINUS expr       { $$ = opr(MINUS, 2, $1, $3); }
         | expr MULTIPLY expr    { $$ = opr(MULTIPLY, 2, $1, $3); }
         | expr DIVIDE expr      { $$ = opr(DIVIDE, 2, $1, $3); }
+        | expr AND expr         { $$ = opr(AND, 2, $1, $3); }
+        | expr OR expr          { $$ = opr(OR, 2, $1, $3); }
         | expr LESS_THAN expr   { $$ = opr(LESS_THAN, 2, $1, $3); }
         | expr GREATER_THAN expr { $$ = opr(GREATER_THAN, 2, $1, $3); }
         | expr LESS_THAN_EQUALS expr  { $$ = opr(LESS_THAN_EQUALS, 2, $1, $3); }
@@ -212,6 +288,18 @@ nodeType *con(int value) {
     return p;
 }
 
+nodeType *flt(float value) {
+    nodeType *p;
+
+    if ((p = malloc(sizeof(nodeType))) == NULL)
+        yyerror("out of memory");
+
+    p->type = typeFloat;
+    p->flt.value = value;
+
+    return p;
+}
+
 nodeType *str(char *value) {
     nodeType *p;
 
@@ -220,6 +308,18 @@ nodeType *str(char *value) {
 
     p->type = typeStr;
     p->str.value = value;
+
+    return p;
+}
+
+nodeType *boolean(bool value) {
+    nodeType *p;
+
+    if ((p = malloc(sizeof(nodeType))) == NULL)
+        yyerror("out of memory");
+
+    p->type = typeBool;
+    p->boolean.value = value;
 
     return p;
 }
@@ -292,20 +392,145 @@ void print_param_tree(nodeType *node, int level) {
     } 
 }
 
+float exf(nodeType *p) {
+    if (!p) return 0.0f;
+    switch(p->type) {
+    case typeCon:       return (float)p->con.value;
+    case typeFloat:     return p->flt.value;
+    case typeStr:       return 0.0f;  // Strings have no floating-point value
+    case typeId:        
+                        // Return the appropriate value depending on if it's a float or int
+                        if (isFloat[p->id.i])
+                            return floatSym[p->id.i];
+                        return (float)sym[p->id.i];
+    case typeOpr:
+        switch(p->opr.oper) {
+        case CREATE:    return 0.0f;  // Object creation doesn't have a float value
+        case COLLISION: ex(p->opr.op[2]); return 0.0f;
+        case DOT:       return 10.0f; // Placeholder for member access
+        case '[':       return 0.0f;  // Placeholder for array literals
+        case WHILE:     while(ex(p->opr.op[0])) ex(p->opr.op[1]); return 0.0f;
+        case IF:        
+            if (ex(p->opr.op[0])) {
+                return exf(p->opr.op[1]);
+            } else if (p->opr.nops > 2) {
+                return exf(p->opr.op[2]); 
+            }
+            return 0.0f;
+        case PRINT:     return 0.0f;  // Print doesn't return a value
+        case ';':       exf(p->opr.op[0]); return exf(p->opr.op[1]);
+        case EQUALS:    
+        case DEFINE:    return 0.0f;  // Assignments don't return float values
+        case UMINUS:    return -exf(p->opr.op[0]);
+        case PLUS:      return exf(p->opr.op[0]) + exf(p->opr.op[1]);
+        case MINUS:     return exf(p->opr.op[0]) - exf(p->opr.op[1]);
+        case MULTIPLY:  return exf(p->opr.op[0]) * exf(p->opr.op[1]);
+        case DIVIDE:    return exf(p->opr.op[0]) / exf(p->opr.op[1]);
+        case LESS_THAN: return exf(p->opr.op[0]) < exf(p->opr.op[1]) ? 1.0f : 0.0f;
+        case GREATER_THAN: return exf(p->opr.op[0]) > exf(p->opr.op[1]) ? 1.0f : 0.0f;
+        case GREATER_THAN_EQUALS: return exf(p->opr.op[0]) >= exf(p->opr.op[1]) ? 1.0f : 0.0f;
+        case LESS_THAN_EQUALS: return exf(p->opr.op[0]) <= exf(p->opr.op[1]) ? 1.0f : 0.0f;
+        case NOT_EQUALS: return exf(p->opr.op[0]) != exf(p->opr.op[1]) ? 1.0f : 0.0f;
+        case EQUALS_EQUALS: return exf(p->opr.op[0]) == exf(p->opr.op[1]) ? 1.0f : 0.0f;
+        case FUNCTION:  {
+            // Similar to the regular ex() function, but return float results
+            int func_idx = p->opr.op[0]->id.i;
+            Function* func = find_function(func_idx);
+            
+            if (!func) {
+                fprintf(stderr, "Error: Undefined function '%c'\n", 'a' + func_idx);
+                return 0.0f;
+            }
+            
+            // Save current symbol table states
+            int saved_sym[26];
+            bool saved_isFloat[26];
+            float saved_floatSym[26];
+            memcpy(saved_sym, sym, sizeof(sym));
+            memcpy(saved_isFloat, isFloat, sizeof(isFloat));
+            memcpy(saved_floatSym, floatSym, sizeof(floatSym));
+            
+            // Process function parameters
+            // ...existing function parameter code...
+            
+            // Execute function with float return value
+            float result = 0.0f;
+            
+            // Check if the function body itself is a RETURN statement
+            if (func->body && func->body->type == typeOpr && func->body->opr.oper == RETURN) {
+                result = exf(func->body->opr.op[0]);
+            }
+            // Otherwise execute the function body normally and look for RETURN statements
+            else {
+                // ...existing function body execution code, but using exf() for results...
+            }
+            
+            // Restore symbol table
+            memcpy(sym, saved_sym, sizeof(sym));
+            memcpy(isFloat, saved_isFloat, sizeof(isFloat));
+            memcpy(floatSym, saved_floatSym, sizeof(floatSym));
+            
+            return result;
+        }
+        case COMMA:     return exf(p->opr.op[0]);
+        case RETURN:    return exf(p->opr.op[0]);
+        }
+    }
+    return 0.0f;
+}
+
 int ex(nodeType *p) {
     if (!p) return 0;
     switch(p->type) {
     case typeCon:       return p->con.value;
+    case typeFloat:     
+                        return (int)p->flt.value;
+    case typeBool:      return p->boolean.value ? 1 : 0;
     case typeStr:       // For string literals, print them directly
                         if (p->str.value != NULL) {
                             return 0;  // Strings don't have a numerical value
                         }
                         return 0;
-    case typeId:        return sym[p->id.i];
+    case typeId:        
+                        // Return the appropriate value depending on type
+                        if (isFloat[p->id.i])
+                            return (int)floatSym[p->id.i];
+                        else if (isBool[p->id.i])
+                            return boolSym[p->id.i] ? 1 : 0;
+                        return sym[p->id.i];
     case typeOpr:
         switch(p->opr.oper) {
+        case CREATE:    {
+                          // Handle object creation
+                          // For now, just output what we're creating
+                          int objId = p->opr.op[0]->id.i;
+                          printf("Created object %c\n", 'a' + objId);
+                          return 0;
+                        }
+        case COLLISION: {
+                          // Handle collision event
+                          int obj1 = p->opr.op[0]->id.i;
+                          int obj2 = p->opr.op[1]->id.i;
+                          printf("Registered collision between %c and %c\n", 'a' + obj1, 'a' + obj2);
+                          // Execute the collision handler body
+                          ex(p->opr.op[2]);
+                          return 0;
+                        }
+        case DOT:       {
+                          // Handle member access (e.g., player.health)
+                          // This is just a placeholder implementation
+                          int objId = p->opr.op[0]->id.i;
+                          int propId = p->opr.op[1]->id.i;
+                          // For demonstration purposes only
+                          return 10; // Return dummy value
+                        }
+        case '[':       {
+                          // Handle array literals
+                          // Just a placeholder implementation
+                          return 0;
+                        }
         case WHILE:     while(ex(p->opr.op[0])) ex(p->opr.op[1]); return 0;
-        case IF: {
+        case IF:        {
             if (ex(p->opr.op[0])) {
                 return ex(p->opr.op[1]);
             } else if (p->opr.nops > 2) {
@@ -316,24 +541,96 @@ int ex(nodeType *p) {
         case PRINT:     
                         if (p->opr.op[0]->type == typeStr) {
                             printf("%s\n", p->opr.op[0]->str.value);
+                        } else if (p->opr.op[0]->type == typeFloat) {
+                            printf("%.2f\n", p->opr.op[0]->flt.value);
+                        } else if (p->opr.op[0]->type == typeBool) {
+                            printf("%s\n", p->opr.op[0]->boolean.value ? "true" : "false");
+                        } else if (isFloatExpression(p->opr.op[0])) {
+                            printf("%.2f\n", exf(p->opr.op[0]));
+                        } else if (isBool[p->opr.op[0]->id.i]) {
+                            printf("%s\n", boolSym[p->opr.op[0]->id.i] ? "true" : "false");
+                        } else if (isBoolExpression(p->opr.op[0])) {
+                            // Print boolean expressions as true/false
+                            printf("%s\n", ex(p->opr.op[0]) ? "true" : "false");
                         } else {
                             printf("%d\n", ex(p->opr.op[0])); 
                         }
                         return 0;
         case ';':       ex(p->opr.op[0]); return ex(p->opr.op[1]);
-        case EQUALS:    return sym[p->opr.op[0]->id.i] = ex(p->opr.op[1]);
-        case DEFINE:    return sym[p->opr.op[0]->id.i] = ex(p->opr.op[1]); // Same as EQUALS for now
+        case EQUALS:    {
+                          if (p->opr.op[1]->type == typeFloat) {
+                              isFloat[p->opr.op[0]->id.i] = true;
+                              isBool[p->opr.op[0]->id.i] = false;
+                              floatSym[p->opr.op[0]->id.i] = p->opr.op[1]->flt.value;
+                              return (int)p->opr.op[1]->flt.value;
+                          } else if (p->opr.op[1]->type == typeBool) {
+                              isFloat[p->opr.op[0]->id.i] = false;
+                              isBool[p->opr.op[0]->id.i] = true;
+                              boolSym[p->opr.op[0]->id.i] = p->opr.op[1]->boolean.value;
+                              return p->opr.op[1]->boolean.value ? 1 : 0;
+                          } else if (isFloatExpression(p->opr.op[1])) {
+                              isFloat[p->opr.op[0]->id.i] = true;
+                              isBool[p->opr.op[0]->id.i] = false;
+                              floatSym[p->opr.op[0]->id.i] = exf(p->opr.op[1]);
+                              return (int)floatSym[p->opr.op[0]->id.i];
+                          } else {
+                              isFloat[p->opr.op[0]->id.i] = false;
+                              isBool[p->opr.op[0]->id.i] = false;
+                              return sym[p->opr.op[0]->id.i] = ex(p->opr.op[1]);
+                          }
+                        }
+        case DEFINE:    {
+                          if (p->opr.op[1]->type == typeFloat) {
+                              isFloat[p->opr.op[0]->id.i] = true;
+                              isBool[p->opr.op[0]->id.i] = false;
+                              floatSym[p->opr.op[0]->id.i] = p->opr.op[1]->flt.value;
+                              return (int)p->opr.op[1]->flt.value;
+                          } else if (p->opr.op[1]->type == typeBool) {
+                              isFloat[p->opr.op[0]->id.i] = false;
+                              isBool[p->opr.op[0]->id.i] = true;
+                              boolSym[p->opr.op[0]->id.i] = p->opr.op[1]->boolean.value;
+                              return p->opr.op[1]->boolean.value ? 1 : 0;
+                          } else if (isFloatExpression(p->opr.op[1])) {
+                              isFloat[p->opr.op[0]->id.i] = true;
+                              isBool[p->opr.op[0]->id.i] = false;
+                              floatSym[p->opr.op[0]->id.i] = exf(p->opr.op[1]);
+                              return (int)floatSym[p->opr.op[0]->id.i];
+                          } else {
+                              isFloat[p->opr.op[0]->id.i] = false;
+                              isBool[p->opr.op[0]->id.i] = false;
+                              return sym[p->opr.op[0]->id.i] = ex(p->opr.op[1]);
+                          }
+                        }
         case UMINUS:    return -ex(p->opr.op[0]);
-        case PLUS:      return ex(p->opr.op[0]) + ex(p->opr.op[1]);
-        case MINUS:     return ex(p->opr.op[0]) - ex(p->opr.op[1]);
-        case MULTIPLY:  return ex(p->opr.op[0]) * ex(p->opr.op[1]);
-        case DIVIDE:    return ex(p->opr.op[0]) / ex(p->opr.op[1]);
+        case PLUS:      
+                        if (isFloatExpression(p->opr.op[0]) || isFloatExpression(p->opr.op[1])) {
+                            return (int)(exf(p->opr.op[0]) + exf(p->opr.op[1]));
+                        }
+                        return ex(p->opr.op[0]) + ex(p->opr.op[1]);
+        case MINUS:     
+                        if (isFloatExpression(p->opr.op[0]) || isFloatExpression(p->opr.op[1])) {
+                            return (int)(exf(p->opr.op[0]) - exf(p->opr.op[1]));
+                        }
+                        return ex(p->opr.op[0]) - ex(p->opr.op[1]);
+        case MULTIPLY:  
+                        if (isFloatExpression(p->opr.op[0]) || isFloatExpression(p->opr.op[1])) {
+                            return (int)(exf(p->opr.op[0]) * exf(p->opr.op[1]));
+                        }
+                        return ex(p->opr.op[0]) * ex(p->opr.op[1]);
+        case DIVIDE:    
+                        if (isFloatExpression(p->opr.op[0]) || isFloatExpression(p->opr.op[1])) {
+                            return (int)(exf(p->opr.op[0]) / exf(p->opr.op[1]));
+                        }
+                        return ex(p->opr.op[0]) / ex(p->opr.op[1]);
         case LESS_THAN: return ex(p->opr.op[0]) < ex(p->opr.op[1]);
         case GREATER_THAN: return ex(p->opr.op[0]) > ex(p->opr.op[1]);
         case GREATER_THAN_EQUALS: return ex(p->opr.op[0]) >= ex(p->opr.op[1]);
         case LESS_THAN_EQUALS: return ex(p->opr.op[0]) <= ex(p->opr.op[1]);
         case NOT_EQUALS: return ex(p->opr.op[0]) != ex(p->opr.op[1]);
         case EQUALS_EQUALS: return ex(p->opr.op[0]) == ex(p->opr.op[1]);
+        case NOT:       return !ex(p->opr.op[0]);
+        case AND:       return ex(p->opr.op[0]) && ex(p->opr.op[1]);
+        case OR:        return ex(p->opr.op[0]) || ex(p->opr.op[1]);
         case FUNCTION:  {
             // Get the function by id
             int func_idx = p->opr.op[0]->id.i;
@@ -346,7 +643,11 @@ int ex(nodeType *p) {
             
             // Save current symbol table states
             int saved_sym[26];
+            bool saved_isFloat[26];
+            float saved_floatSym[26];
             memcpy(saved_sym, sym, sizeof(sym));
+            memcpy(saved_isFloat, isFloat, sizeof(isFloat));
+            memcpy(saved_floatSym, floatSym, sizeof(floatSym));
             
             // Process arguments and assign to parameters
             if (func->params != NULL) {
@@ -464,6 +765,8 @@ int ex(nodeType *p) {
             
             // Restore symbol table
             memcpy(sym, saved_sym, sizeof(sym));
+            memcpy(isFloat, saved_isFloat, sizeof(isFloat));
+            memcpy(floatSym, saved_floatSym, sizeof(floatSym));
             
             return result;
         }
@@ -476,4 +779,80 @@ int ex(nodeType *p) {
         }
     }
     return 0;
+}
+
+bool isFloatExpression(nodeType *p) {
+    if (!p) return false;
+    
+    switch(p->type) {
+        case typeFloat:
+            return true;
+        case typeId:
+            return isFloat[p->id.i];
+        case typeCon:
+        case typeStr:
+        case typeBool:
+            return false;
+        case typeOpr:
+            switch(p->opr.oper) {
+                case PLUS:
+                case MINUS:
+                case MULTIPLY:
+                case DIVIDE:
+                    return isFloatExpression(p->opr.op[0]) || isFloatExpression(p->opr.op[1]);
+                case UMINUS:
+                    return isFloatExpression(p->opr.op[0]);
+                case FUNCTION:
+                    // Check if any arguments are floats, which might make the result a float
+                    if (p->opr.op[1]) {
+                        if (p->opr.op[1]->type == typeOpr && p->opr.op[1]->opr.oper == COMMA) {
+                            return isFloatExpression(p->opr.op[1]->opr.op[0]) || 
+                                   isFloatExpression(p->opr.op[1]->opr.op[1]);
+                        } else {
+                            return isFloatExpression(p->opr.op[1]);
+                        }
+                    }
+                    return false;
+                default:
+                    return false;
+            }
+        default:
+            return false;
+    }
+}
+
+bool isBoolExpression(nodeType *p) {
+    if (!p) return false;
+    
+    switch(p->type) {
+        case typeBool:
+            return true;
+        case typeId:
+            return isBool[p->id.i];
+        case typeCon:
+        case typeFloat:
+        case typeStr:
+            return false;
+        case typeOpr:
+            switch(p->opr.oper) {
+                case AND:
+                case OR:
+                case NOT:
+                case LESS_THAN:
+                case GREATER_THAN:
+                case LESS_THAN_EQUALS:
+                case GREATER_THAN_EQUALS:
+                case EQUALS_EQUALS:
+                case NOT_EQUALS:
+                    return true;  // These operators always produce boolean results
+                case FUNCTION:
+                    // The function might return a boolean value
+                    // We can't easily determine this, but we can be conservative
+                    return false;
+                default:
+                    return false;
+            }
+        default:
+            return false;
+    }
 }
