@@ -16,20 +16,21 @@ POMI is a domain-specific programming language designed for platform game develo
 #### Data Types
 POMI supports various data types:
 
-	DEFINE score = 100;             // Integer
-	DEFINE speed = 5.5;             // Float
-	DEFINE message = "Game Over";   // String
-	DEFINE isJumping = true;        // Boolean
+	DEFINE a = 100;             // Integer
+	DEFINE b = 5.5;             // Float
+	DEFINE c = "Game Over";   // String
+	DEFINE d = true;        // Boolean
 
 #### Control Structures
-POMI supports standard control structures with game-specific keywords:
+POMI supports standard control structures:
 
-	IF player.position.x > 500 THEN
-	    PRINT("Player reached checkpoint!");
+	IF x > 500 THEN
+	    PRINT("X is bigger than 500");
 	ENDIF;
 	
-	WHILE enemy.health > 0 DO
-	    enemy.position.x += enemy.direction * enemy.speed;
+	WHILE a > 0 DO
+	    PRINT(a);
+     	    a-=1:
 	ENDWHILE;
 
 POMI supports nested IF statements with ELSE clauses:
@@ -56,14 +57,14 @@ POMI supports multiple assignment operators:
 #### Functions
 Functions are defined with the FUNCTION keyword:
 
-	FUNCTION calculateDamage(attackPower, defense) {
-	    RETURN attackPower * 2 - defense;
+	FUNCTION add(a, b) {
+	    RETURN a + b;
 	}
 
 Functions can be called and their return values used in expressions:
 
-	DEFINE damage = calculateDamage(10, 5);
-	PRINT(damage);  // Outputs: 15
+	DEFINE c = add(10, 5);
+	PRINT(c);  //Prints 15
 
 #### Boolean Operations
 POMI supports logical operations for game state management:
