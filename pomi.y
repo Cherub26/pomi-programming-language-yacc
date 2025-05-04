@@ -1,10 +1,12 @@
 %{
-#include <stdbool.h>  /* This MUST be first */
+// Include necessary libraries
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include "pomi.h"
+#include <setjmp.h>
 
 // Forward declarations
 nodeType *opr(int oper, int nops, ...);
@@ -12,34 +14,34 @@ nodeType *id(int i);
 nodeType *con(int value);
 nodeType *flt(float value);
 nodeType *str(char *value);
-nodeType *boolean(bool value);  // New function for boolean literals
+nodeType *boolean(bool value);
 void freeNode(nodeType *p);
 int ex(nodeType *p);
-float exf(nodeType *p);  // New float-returning evaluation function
-bool isFloatExpression(nodeType *p);  // Add declaration for isFloatExpression
-bool isBoolExpression(nodeType *p);   // Add declaration for isBoolExpression
+float exf(nodeType *p);
+bool isFloatExpression(nodeType *p);
+bool isBoolExpression(nodeType *p);
 int yylex(void);
 void yyerror(char *s);
-extern int yylineno; // Use line number tracking from Flex
-int sym[26]; // Symbol table for variables
-char* strSym[26]; // String symbol table
-float floatSym[26]; // Float symbol table
-bool isFloat[26]; // To track whether a variable holds an integer or float
-bool isBool[26]; // To track whether a variable holds a boolean
-bool boolSym[26]; // Boolean symbol table
+extern int yylineno; // Tracks line numbers
+int sym[26]; // Integer variables
+char* strSym[26]; // String variables
+float floatSym[26]; // Float variables
+bool isFloat[26]; // Tracks if a variable is float
+bool isBool[26]; // Tracks if a variable is boolean
+bool boolSym[26]; // Boolean variables
 
-// Function table
+// FUNCTION table to store function definitions
 typedef struct {
-    int id;  // Use the integer ID instead of char
-    nodeType *params;
-    nodeType *body;
+    int id;  // Function identifier
+    nodeType *params; // Function parameters
+    nodeType *body; // Function body
 } Function;
 
 #define MAX_FUNCTIONS 100
 Function functions[MAX_FUNCTIONS];
 int function_count = 0;
 
-// Function to register a function definition
+// Add a function to the table
 void register_function(int func_id, nodeType *params, nodeType *body) {
     if (function_count < MAX_FUNCTIONS) {
         functions[function_count].id = func_id;
@@ -51,7 +53,7 @@ void register_function(int func_id, nodeType *params, nodeType *body) {
     }
 }
 
-// Function to find a function by id
+// Find a function by its ID
 Function* find_function(int func_id) {
     for (int i = 0; i < function_count; i++) {
         if (functions[i].id == func_id) {
@@ -61,8 +63,35 @@ Function* find_function(int func_id) {
     return NULL;
 }
 
-// For debugging - must be defined after tokens are declared
+// Debugging helper for parameter trees
 void print_param_tree(nodeType *node, int level);
+
+typedef struct exception_context {
+    jmp_buf env;
+    char error_msg[256];
+    int active;
+    struct exception_context* prev;
+} exception_context;
+
+exception_context* current_exception = NULL;
+
+void throw_exception(char* msg) {
+    if (current_exception && current_exception->active) {
+        strncpy(current_exception->error_msg, msg, sizeof(current_exception->error_msg) - 1);
+        current_exception->error_msg[sizeof(current_exception->error_msg) - 1] = '\0';
+        
+        // Print error but don't exit
+        fprintf(stderr, "Exception: %s\n", msg);
+        fflush(stderr);
+        
+        longjmp(current_exception->env, 1);
+    } else {
+        // No active exception context, treat as fatal error
+        fprintf(stderr, "Unhandled exception: %s\n", msg);
+        fflush(stderr);
+        exit(EXIT_FAILURE);
+    }
+}
 
 %}
 
@@ -86,6 +115,8 @@ void print_param_tree(nodeType *node, int level);
 %token DEFINE DO ENDWHILE ENDIF THEN
 %token CREATE AS PLAYER ENEMY PLATFORM ITEM GAME LEVEL
 %token ON COLLISION
+%token TRY CATCH ENDTRY
+%token THROW
 
 // Operators and punctuation
 %token PLUS MINUS MULTIPLY DIVIDE 
@@ -169,6 +200,9 @@ stmt:
                                         }
         | function_call SEMICOLON       { $$ = $1; }
         | return_stmt                   { $$ = $1; } /* Make return a standalone statement */
+        | TRY stmt_list CATCH stmt_list ENDTRY SEMICOLON
+                                        { $$ = opr(TRY, 2, $2, $4); }
+        | THROW expr SEMICOLON          { $$ = opr(THROW, 1, $2); }
         | error SEMICOLON               { 
             // Instead of continuing, abort parsing
             YYABORT;
@@ -368,7 +402,8 @@ void freeNode(nodeType *p) {
 void yyerror(char *s) {
     fprintf(stderr, "Line %d: %s\n", yylineno, s);
     fflush(stderr);
-    exit(EXIT_FAILURE); // Keep the immediate exit
+    
+    throw_exception(s);
 }
 
 int main(void) {
@@ -425,7 +460,14 @@ float exf(nodeType *p) {
         case PLUS:      return exf(p->opr.op[0]) + exf(p->opr.op[1]);
         case MINUS:     return exf(p->opr.op[0]) - exf(p->opr.op[1]);
         case MULTIPLY:  return exf(p->opr.op[0]) * exf(p->opr.op[1]);
-        case DIVIDE:    return exf(p->opr.op[0]) / exf(p->opr.op[1]);
+        case DIVIDE: {
+            float right = exf(p->opr.op[1]);
+            if (right == 0.0f) {
+                throw_exception("Division by zero");
+                return 0.0f; // Never reached but avoids compiler warning
+            }
+            return exf(p->opr.op[0]) / right;
+        }
         case LESS_THAN: return exf(p->opr.op[0]) < exf(p->opr.op[1]) ? 1.0f : 0.0f;
         case GREATER_THAN: return exf(p->opr.op[0]) > exf(p->opr.op[1]) ? 1.0f : 0.0f;
         case GREATER_THAN_EQUALS: return exf(p->opr.op[0]) >= exf(p->opr.op[1]) ? 1.0f : 0.0f;
@@ -617,11 +659,24 @@ int ex(nodeType *p) {
                             return (int)(exf(p->opr.op[0]) * exf(p->opr.op[1]));
                         }
                         return ex(p->opr.op[0]) * ex(p->opr.op[1]);
-        case DIVIDE:    
-                        if (isFloatExpression(p->opr.op[0]) || isFloatExpression(p->opr.op[1])) {
-                            return (int)(exf(p->opr.op[0]) / exf(p->opr.op[1]));
-                        }
-                        return ex(p->opr.op[0]) / ex(p->opr.op[1]);
+        case DIVIDE: {
+            int right = ex(p->opr.op[1]);
+            if (right == 0) {
+                throw_exception("Division by zero");
+                return 0; // Never reached but avoids compiler warning
+            }
+            
+            if (isFloatExpression(p->opr.op[0]) || isFloatExpression(p->opr.op[1])) {
+                float rightf = exf(p->opr.op[1]);
+                if (rightf == 0.0f) {
+                    throw_exception("Division by zero");
+                    return 0; // Never reached but avoids compiler warning
+                }
+                return (int)(exf(p->opr.op[0]) / rightf);
+            }
+            
+            return ex(p->opr.op[0]) / right;
+        }
         case LESS_THAN: return ex(p->opr.op[0]) < ex(p->opr.op[1]);
         case GREATER_THAN: return ex(p->opr.op[0]) > ex(p->opr.op[1]);
         case GREATER_THAN_EQUALS: return ex(p->opr.op[0]) >= ex(p->opr.op[1]);
@@ -775,6 +830,33 @@ int ex(nodeType *p) {
         case RETURN: {
             // When we encounter a RETURN statement, return the evaluated expression
             return ex(p->opr.op[0]);
+        }
+        case TRY: {
+            exception_context new_context;
+            new_context.active = 1;
+            new_context.prev = current_exception;
+            current_exception = &new_context;
+            
+            int result = 0;
+            if (setjmp(new_context.env) == 0) {
+                // Normal execution path - execute the try block
+                result = ex(p->opr.op[0]);
+            } else {
+                // Exception thrown - execute the catch block
+                printf("Caught exception: %s\n", new_context.error_msg);
+                result = ex(p->opr.op[1]);
+            }
+            
+            // Restore previous exception context
+            current_exception = new_context.prev;
+            return result;
+        }
+        case THROW: {
+            int value = ex(p->opr.op[0]);
+            char error_msg[256];
+            snprintf(error_msg, sizeof(error_msg), "Explicit exception thrown with value: %d", value);
+            throw_exception(error_msg);
+            return 0; // Never reached due to longjmp
         }
         }
     }

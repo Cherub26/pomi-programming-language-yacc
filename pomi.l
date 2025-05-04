@@ -36,6 +36,10 @@ extern int yylineno; // Use yylineno provided by flex
 "LEVEL"         { return LEVEL; }
 "ON"            { return ON; }
 "COLLISION"     { return COLLISION; }
+"TRY"           { return TRY; }
+"CATCH"         { return CATCH; }
+"ENDTRY"        { return ENDTRY; }
+"THROW"         { return THROW; }
 "true"          { return TRUE; }
 "false"         { return FALSE; }
 "&&"            { return AND; }

@@ -1,0 +1,37 @@
+// Testing explicit THROW
+
+DEFINE errorCode = 42;
+DEFINE b=31;
+
+// Example 1: Try-catch with explicit THROW
+PRINT("Example 1: Try-catch with explicit THROW");
+TRY
+    PRINT("About to throw an exception");
+    THROW b;
+    THROW errorCode;  // This will throw an exception with value 42
+    PRINT("This won't execute");
+CATCH
+    PRINT("Exception caught");
+ENDTRY;
+
+PRINT("Program continues after first try-catch");
+
+// Example 2: Division by zero error
+PRINT("Example 2: Division by zero error");
+TRY
+    DEFINE a = 10;
+    DEFINE b = 0;
+    PRINT("Attempting division");
+    DEFINE result = a / b;
+CATCH
+    PRINT("Caught division by zero error");
+ENDTRY;
+
+PRINT("Program continues after second try-catch");
+
+// Uncomment to see uncaught exception behavior:
+// PRINT("Example 3: Uncaught exception");
+// THROW 999;
+// PRINT("This won't execute");
+
+PRINT("Program completed successfully");
