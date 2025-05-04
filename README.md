@@ -6,10 +6,11 @@ Group Members: Batuhan Yılmaz, Emre Kemal Aksel, Muhammed Kaan Uman
 POMI is a domain-specific programming language designed for platform game development. It provides an intuitive syntax with built-in support for common game development patterns, making it accessible for programmers who want to quickly prototype or build 2D games.
 
 ### Language Design Goals
-1.Simplicity: Easy to learn with straightforward syntax
-2.Type flexibility: Support for integers, floats, strings, and booleans
-3.Error handling: Built-in exception management
-
+1. Simplicity: Easy to learn with straightforward syntax    
+2. Type flexibility: Support for integers, floats, strings, and booleans   
+3. Error handling: Built-in exception management   
+4. Statement-by-statement execution: Programs are executed line-by-line, aiding in debugging and making control flow easy to follow
+   
 ### Syntax Highlights
 
 #### Data Types
